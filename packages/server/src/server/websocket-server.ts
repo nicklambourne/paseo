@@ -1901,6 +1901,7 @@ export class VoiceAssistantWebSocketServer {
         projectGithubClone: true,
         // COMPAT(workspaceGithubRepositorySearch): added in v0.1.108, remove gate after 2027-01-15.
         workspaceGithubRepositorySearch: true,
+        githubDeviceAuth: true,
         // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
         projectCreateDirectory: true,
         // COMPAT(commitsList): added in v0.1.110, remove gate after 2027-01-16.

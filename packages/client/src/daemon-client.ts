@@ -81,6 +81,7 @@ import type {
   ProjectCreateDirectoryResponse,
   OpenProjectResponseMessage,
   WorkspaceGithubSearchRepositoriesResponse,
+  GithubDeviceAuthResponse,
   ProjectGithubCloneProtocol,
   ProjectGithubCloneResponse,
   ArchiveWorkspaceResponseMessage,
@@ -902,6 +903,7 @@ type ProjectAddPayload = ProjectAddResponse["payload"];
 export type ProjectCreateDirectoryPayload = ProjectCreateDirectoryResponse["payload"];
 export type WorkspaceGithubSearchRepositoriesPayload =
   WorkspaceGithubSearchRepositoriesResponse["payload"];
+export type GithubDeviceAuthPayload = GithubDeviceAuthResponse["payload"];
 type ProjectGithubClonePayload = ProjectGithubCloneResponse["payload"];
 type ArchiveWorkspacePayload = ArchiveWorkspaceResponseMessage["payload"];
 type WorkspaceSetupStatusPayload = WorkspaceSetupStatusResponseMessage["payload"];
@@ -2630,6 +2632,16 @@ export class DaemonClient {
         },
       },
     );
+  }
+
+  async githubDeviceAuth(
+    action: "start" | "status" | "cancel",
+    requestId?: string,
+  ): Promise<GithubDeviceAuthPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"github.device_auth.response">({
+      requestId,
+      message: { type: "github.device_auth.request", action },
+    });
   }
 
   async cloneGithubProject(
