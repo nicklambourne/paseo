@@ -81,6 +81,7 @@ import type {
   ProjectCreateDirectoryResponse,
   OpenProjectResponseMessage,
   WorkspaceGithubSearchRepositoriesResponse,
+  GithubDeviceAuthResponse,
   ProjectGithubCloneProtocol,
   ProjectGithubCloneResponse,
   ArchiveWorkspaceResponseMessage,
@@ -902,6 +903,7 @@ type ProjectAddPayload = ProjectAddResponse["payload"];
 export type ProjectCreateDirectoryPayload = ProjectCreateDirectoryResponse["payload"];
 export type WorkspaceGithubSearchRepositoriesPayload =
   WorkspaceGithubSearchRepositoriesResponse["payload"];
+export type GithubDeviceAuthPayload = GithubDeviceAuthResponse["payload"];
 type ProjectGithubClonePayload = ProjectGithubCloneResponse["payload"];
 type ArchiveWorkspacePayload = ArchiveWorkspaceResponseMessage["payload"];
 type WorkspaceSetupStatusPayload = WorkspaceSetupStatusResponseMessage["payload"];
@@ -2630,6 +2632,16 @@ export class DaemonClient {
         },
       },
     );
+  }
+
+  async githubDeviceAuth(
+    action: "start" | "status" | "cancel",
+    requestId?: string,
+  ): Promise<GithubDeviceAuthPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"github.device_auth.response">({
+      requestId,
+      message: { type: "github.device_auth.request", action },
+    });
   }
 
   async cloneGithubProject(
@@ -5226,6 +5238,20 @@ export class DaemonClient {
       },
       responseType: "provider_diagnostic_response",
       timeout: 180000,
+    });
+  }
+
+  async codexAuth(action: "start" | "status" | "cancel") {
+    return this.sendNamespacedCorrelatedSessionRequest<"provider.codex.auth.response">({
+      message: { type: "provider.codex.auth.request", action },
+      timeout: 60_000,
+    });
+  }
+
+  async claudeAuth(action: "start" | "status" | "submit" | "cancel", code?: string) {
+    return this.sendNamespacedCorrelatedSessionRequest<"provider.claude.auth.response">({
+      message: { type: "provider.claude.auth.request", action, ...(code ? { code } : {}) },
+      timeout: 60_000,
     });
   }
 

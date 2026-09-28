@@ -5,6 +5,7 @@ import {
   parseGitRemoteLocation,
 } from "@getpaseo/protocol/git-remote";
 import { findExecutable } from "../executable-resolution/executable-resolution.js";
+import { createGitHubDeviceAuth, type GitHubDeviceAuthState } from "./github-device-auth.js";
 import { runGitCommand } from "../utils/run-git-command.js";
 import { execCommand } from "../utils/spawn.js";
 import { resolveSshHostname } from "../utils/ssh-hostname.js";
@@ -989,6 +990,9 @@ export interface SearchGitHubRepositoriesOptions {
 
 export interface GitHubService extends ForgeService {
   searchRepositories(options: SearchGitHubRepositoriesOptions): Promise<GitHubRepositorySummary[]>;
+  startDeviceAuth(): Promise<GitHubDeviceAuthState>;
+  getDeviceAuthStatus(): GitHubDeviceAuthState;
+  cancelDeviceAuth(): GitHubDeviceAuthState;
 }
 
 export class GitHubCliMissingError extends ForgeCliMissingError {
@@ -1125,6 +1129,7 @@ export function createGitHubService(options: CreateGitHubServiceOptions = {}): G
     resolveRepoHost: options.resolveRepoHost ?? resolveGitHubEnterpriseHost,
     resolveRepoSlug: options.resolveRepoSlug ?? resolveGitHubSlugFromOrigin,
   };
+  const deviceAuth = createGitHubDeviceAuth({ resolveGhPath: deps.resolveGhPath });
   // A resolved enterprise host is cached permanently; a null resolution (no
   // host, or the auth probe said no) expires so `gh auth login --hostname`
   // run after the first probe is picked up without a daemon restart. The
@@ -2019,6 +2024,9 @@ export function createGitHubService(options: CreateGitHubServiceOptions = {}): G
 
   api = {
     authProbeCanThrow: true,
+    startDeviceAuth: () => deviceAuth.start(),
+    getDeviceAuthStatus: () => deviceAuth.status(),
+    cancelDeviceAuth: () => deviceAuth.cancel(),
 
     listPullRequests(input) {
       return cached({
@@ -2646,6 +2654,7 @@ export function createGitHubService(options: CreateGitHubServiceOptions = {}): G
     },
 
     dispose() {
+      deviceAuth.cancel();
       if (githubPollTimer) {
         clearTimeout(githubPollTimer);
         githubPollTimer = null;

@@ -2605,6 +2605,8 @@ export const ru: TranslationResources = {
       },
     },
     providers: {
+      claudeAuth: en.settings.providers.claudeAuth,
+      codexAuth: en.settings.providers.codexAuth,
       title: "Провайдеры",
       addProvider: "Добавить провайдера",
       providerDetails: "Сведения о провайдере {{name}}",

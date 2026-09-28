@@ -1769,6 +1769,19 @@ export const ProviderDiagnosticRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+export const CodexAuthRequestSchema = z.object({
+  type: z.literal("provider.codex.auth.request"),
+  action: z.enum(["start", "status", "cancel"]),
+  requestId: z.string(),
+});
+
+export const ClaudeAuthRequestSchema = z.object({
+  type: z.literal("provider.claude.auth.request"),
+  action: z.enum(["start", "status", "submit", "cancel"]),
+  code: z.string().trim().min(1).max(2048).optional(),
+  requestId: z.string(),
+});
+
 export const ProviderUsageListRequestMessageSchema = z.object({
   type: z.literal("provider.usage.list.request"),
   requestId: z.string(),
@@ -2576,6 +2589,12 @@ export const WorkspaceGithubSearchRepositoriesRequestSchema = z.object({
   requestId: z.string(),
 });
 
+export const GithubDeviceAuthRequestSchema = z.object({
+  type: z.literal("github.device_auth.request"),
+  action: z.enum(["start", "status", "cancel"]),
+  requestId: z.string(),
+});
+
 export const ProjectGithubCloneProtocolSchema = z.enum(["https", "ssh"]);
 
 export const ProjectGithubCloneRequestSchema = z.object({
@@ -3231,6 +3250,8 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   GetProvidersSnapshotRequestMessageSchema,
   RefreshProvidersSnapshotRequestMessageSchema,
   ProviderDiagnosticRequestMessageSchema,
+  ClaudeAuthRequestSchema,
+  CodexAuthRequestSchema,
   ProviderUsageListRequestMessageSchema,
   ResumeAgentRequestMessageSchema,
   ImportAgentRequestMessageSchema,
@@ -3296,6 +3317,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProjectAddRequestSchema,
   ProjectCreateDirectoryRequestSchema,
   WorkspaceGithubSearchRepositoriesRequestSchema,
+  GithubDeviceAuthRequestSchema,
   ProjectGithubCloneRequestSchema,
   ArchiveWorkspaceRequestSchema,
   WorkspaceCreateRequestSchema,
@@ -3648,6 +3670,7 @@ export const ServerInfoStatusPayloadSchema = z
         projectGithubClone: z.boolean().optional(),
         // COMPAT(workspaceGithubRepositorySearch): added in v0.1.108, remove gate after 2027-01-15.
         workspaceGithubRepositorySearch: z.boolean().optional(),
+        githubDeviceAuth: z.boolean().optional(),
         // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
         projectCreateDirectory: z.boolean().optional(),
         // COMPAT(projectList): added in v0.2.4, drop the gate when floor >= v0.2.4.
@@ -3658,6 +3681,10 @@ export const ServerInfoStatusPayloadSchema = z
         commitBaseClassification: z.boolean().optional(),
         // COMPAT(providerRemoval): added in v0.1.105, drop the gate when floor >= v0.1.105.
         providerRemoval: z.boolean().optional(),
+        // COMPAT(claudeAuth): added in v0.10.0, remove gate after 2027-03-28.
+        claudeAuth: z.boolean().optional(),
+        // COMPAT(codexAuth): added in v0.10.0, remove gate after 2027-03-28.
+        codexAuth: z.boolean().optional(),
         // COMPAT(importSessionWorkspaceTarget): added in v0.1.110, remove gate after 2027-01-16.
         importSessionWorkspaceTarget: z.boolean().optional(),
         // COMPAT(importSessionSearch): added in v0.8.0, remove gate after 2027-03-02.
@@ -4424,6 +4451,22 @@ export const ProjectCreateDirectoryResponseSchema = z.object({
     // responses after a newer daemon learns another failure reason.
     errorCode: z.string().nullable(),
   }),
+});
+
+export const GithubDeviceAuthResponseSchema = z.object({
+  type: z.literal("github.device_auth.response"),
+  payload: z.discriminatedUnion("status", [
+    z.object({ status: z.literal("idle"), requestId: z.string() }),
+    z.object({ status: z.literal("starting"), requestId: z.string() }),
+    z.object({ status: z.literal("authenticated"), requestId: z.string() }),
+    z.object({
+      status: z.literal("pending"),
+      requestId: z.string(),
+      userCode: z.string().regex(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/),
+      verificationUrl: z.literal("https://github.com/login/device"),
+    }),
+    z.object({ status: z.literal("error"), requestId: z.string(), message: z.string() }),
+  ]),
 });
 
 export const WorkspaceGithubSearchRepositoriesResponseSchema = z.object({
@@ -6187,6 +6230,34 @@ export const ProviderUsageWindowSchema = z.object({
   tone: ProviderUsageToneSchema.optional(),
 });
 
+export const CodexAuthResponseSchema = z.object({
+  type: z.literal("provider.codex.auth.response"),
+  payload: z.discriminatedUnion("status", [
+    z.object({ status: z.literal("disconnected"), requestId: z.string() }),
+    z.object({ status: z.literal("starting"), requestId: z.string() }),
+    z.object({ status: z.literal("connected"), requestId: z.string() }),
+    z.object({
+      status: z.literal("pending"),
+      url: z.string().url(),
+      code: z.string(),
+      requestId: z.string(),
+    }),
+    z.object({ status: z.literal("error"), message: z.string(), requestId: z.string() }),
+  ]),
+});
+
+export const ClaudeAuthResponseSchema = z.object({
+  type: z.literal("provider.claude.auth.response"),
+  payload: z.discriminatedUnion("status", [
+    z.object({ status: z.literal("disconnected"), requestId: z.string() }),
+    z.object({ status: z.literal("starting"), requestId: z.string() }),
+    z.object({ status: z.literal("checking"), requestId: z.string() }),
+    z.object({ status: z.literal("connected"), requestId: z.string() }),
+    z.object({ status: z.literal("pending"), url: z.string().url(), requestId: z.string() }),
+    z.object({ status: z.literal("error"), message: z.string(), requestId: z.string() }),
+  ]),
+});
+
 export const ProviderUsageBalanceSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -6793,6 +6864,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProjectCreateDirectoryResponseSchema,
   OpenProjectResponseMessageSchema,
   WorkspaceGithubSearchRepositoriesResponseSchema,
+  GithubDeviceAuthResponseSchema,
   ProjectGithubCloneResponseSchema,
   StartWorkspaceScriptResponseMessageSchema,
   WorkspaceScriptListResponseMessageSchema,
@@ -6912,6 +6984,8 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProvidersSnapshotUpdateMessageSchema,
   RefreshProvidersSnapshotResponseMessageSchema,
   ProviderDiagnosticResponseMessageSchema,
+  ClaudeAuthResponseSchema,
+  CodexAuthResponseSchema,
   ProviderUsageListResponseMessageSchema,
   ListCommandsResponseSchema,
   ListTerminalsResponseSchema,
@@ -6999,6 +7073,7 @@ export type OpenProjectResponseMessage = z.infer<typeof OpenProjectResponseMessa
 export type WorkspaceGithubSearchRepositoriesResponse = z.infer<
   typeof WorkspaceGithubSearchRepositoriesResponseSchema
 >;
+export type GithubDeviceAuthResponse = z.infer<typeof GithubDeviceAuthResponseSchema>;
 export type GithubRepository = z.infer<typeof GithubRepositorySchema>;
 export type ProjectGithubCloneResponse = z.infer<typeof ProjectGithubCloneResponseSchema>;
 export type StartWorkspaceScriptResponseMessage = z.infer<
@@ -7090,6 +7165,8 @@ export type RefreshProvidersSnapshotResponseMessage = z.infer<
 export type ProviderDiagnosticResponseMessage = z.infer<
   typeof ProviderDiagnosticResponseMessageSchema
 >;
+export type ClaudeAuthResponse = z.infer<typeof ClaudeAuthResponseSchema>;
+export type CodexAuthResponse = z.infer<typeof CodexAuthResponseSchema>;
 export type ProviderUsageTone = z.infer<typeof ProviderUsageToneSchema>;
 export type ProviderUsageStatus = z.infer<typeof ProviderUsageStatusSchema>;
 export type ProviderUsage = z.infer<typeof ProviderUsageSchema>;
@@ -7318,6 +7395,7 @@ export type ProjectCreateDirectoryErrorCode = z.infer<typeof ProjectCreateDirect
 export type WorkspaceGithubSearchRepositoriesRequest = z.infer<
   typeof WorkspaceGithubSearchRepositoriesRequestSchema
 >;
+export type GithubDeviceAuthRequest = z.infer<typeof GithubDeviceAuthRequestSchema>;
 export type ProjectGithubCloneRequest = z.infer<typeof ProjectGithubCloneRequestSchema>;
 export type ProjectGithubCloneProtocol = z.infer<typeof ProjectGithubCloneProtocolSchema>;
 export type ArchiveWorkspaceRequest = z.infer<typeof ArchiveWorkspaceRequestSchema>;
