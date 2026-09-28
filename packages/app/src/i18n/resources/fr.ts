@@ -2622,6 +2622,7 @@ export const fr: TranslationResources = {
       },
     },
     providers: {
+      claudeAuth: en.settings.providers.claudeAuth,
       title: "Fournisseurs",
       addProvider: "Ajouter un fournisseur",
       providerDetails: "Détails du fournisseur{{name}}",

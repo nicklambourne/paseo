@@ -20,6 +20,8 @@ import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
+import { useHostFeature } from "@/runtime/host-features";
+import { ClaudeAuthPanel } from "@/components/claude-auth-panel";
 import { settingsStyles } from "@/styles/settings";
 import { resolveProviderLabel } from "@/utils/provider-definitions";
 import { formatTimeAgo } from "@/utils/time";
@@ -575,6 +577,7 @@ export function ProviderDiagnosticSheet({
   const { t } = useTranslation();
   const { theme } = useUnistyles();
   const isCompact = useIsCompactFormFactor();
+  const supportsClaudeAuth = useHostFeature(serverId, "claudeAuth");
   const { entries: snapshotEntries, refresh, isRefreshing } = useProvidersSnapshot(serverId);
   const { config, patchConfig } = useDaemonConfig(serverId);
   const [query, setQuery] = useState("");
@@ -696,6 +699,14 @@ export function ProviderDiagnosticSheet({
         })}
         snapPoints={MAIN_SNAP_POINTS}
       >
+        {provider === "claude" && supportsClaudeAuth ? (
+          <ClaudeAuthPanel serverId={serverId} onConnected={handleRefreshModels} />
+        ) : null}
+        {provider === "claude" && !supportsClaudeAuth ? (
+          <Text style={sheetStyles.featureNotice}>
+            {t("settings.providers.claudeAuth.updateHost")}
+          </Text>
+        ) : null}
         <ProviderModalBody
           discoveredCount={discoveredModels.length}
           additionalCount={additionalModels.length}
@@ -729,6 +740,11 @@ export function ProviderDiagnosticSheet({
 }
 
 const sheetStyles = StyleSheet.create((theme) => ({
+  featureNotice: {
+    margin: theme.spacing[4],
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+  },
   mutedText: {
     fontSize: theme.fontSize.base,
     color: theme.colors.foregroundMuted,

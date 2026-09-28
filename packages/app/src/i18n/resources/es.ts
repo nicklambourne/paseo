@@ -2614,6 +2614,7 @@ export const es: TranslationResources = {
       },
     },
     providers: {
+      claudeAuth: en.settings.providers.claudeAuth,
       title: "Proveedores",
       addProvider: "Agregar proveedor",
       providerDetails: "Detalles del proveedor{{name}}",

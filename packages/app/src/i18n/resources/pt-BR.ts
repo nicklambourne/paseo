@@ -2597,6 +2597,7 @@ export const ptBR: TranslationResources = {
       },
     },
     providers: {
+      claudeAuth: en.settings.providers.claudeAuth,
       title: "Provedores",
       addProvider: "Adicionar provedor",
       providerDetails: "Detalhes do provedor {{name}}",

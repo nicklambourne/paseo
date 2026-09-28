@@ -5229,6 +5229,13 @@ export class DaemonClient {
     });
   }
 
+  async claudeAuth(action: "start" | "status" | "submit" | "cancel", code?: string) {
+    return this.sendNamespacedCorrelatedSessionRequest<"provider.claude.auth.response">({
+      message: { type: "provider.claude.auth.request", action, ...(code ? { code } : {}) },
+      timeout: 60_000,
+    });
+  }
+
   async listProviderUsage(options?: { requestId?: string }): Promise<ProviderUsageListPayload> {
     return this.sendNamespacedCorrelatedSessionRequest({
       requestId: options?.requestId,

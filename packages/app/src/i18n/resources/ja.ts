@@ -2583,6 +2583,7 @@ export const ja: TranslationResources = {
       },
     },
     providers: {
+      claudeAuth: en.settings.providers.claudeAuth,
       title: "プロバイダー",
       addProvider: "プロバイダーを追加",
       providerDetails: "{{name}}プロバイダーの詳細",

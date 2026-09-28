@@ -2569,6 +2569,7 @@ export const ko: TranslationResources = {
       },
     },
     providers: {
+      claudeAuth: en.settings.providers.claudeAuth,
       title: "프로바이더",
       addProvider: "프로바이더 추가",
       providerDetails: "{{name}} 프로바이더 세부 정보",

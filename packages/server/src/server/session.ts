@@ -2995,6 +2995,8 @@ export class Session {
         return this.providerCatalogSession.handleRefreshProvidersSnapshotRequest(msg);
       case "provider_diagnostic_request":
         return this.providerCatalogSession.handleProviderDiagnosticRequest(msg);
+      case "provider.claude.auth.request":
+        return this.providerCatalogSession.handleClaudeAuthRequest(msg);
       case "provider.usage.list.request":
         return this.providerCatalogSession.handleProviderUsageListRequest(msg);
       default:

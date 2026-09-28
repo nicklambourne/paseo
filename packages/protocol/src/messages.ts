@@ -1769,6 +1769,13 @@ export const ProviderDiagnosticRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+export const ClaudeAuthRequestSchema = z.object({
+  type: z.literal("provider.claude.auth.request"),
+  action: z.enum(["start", "status", "submit", "cancel"]),
+  code: z.string().trim().min(1).max(2048).optional(),
+  requestId: z.string(),
+});
+
 export const ProviderUsageListRequestMessageSchema = z.object({
   type: z.literal("provider.usage.list.request"),
   requestId: z.string(),
@@ -3231,6 +3238,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   GetProvidersSnapshotRequestMessageSchema,
   RefreshProvidersSnapshotRequestMessageSchema,
   ProviderDiagnosticRequestMessageSchema,
+  ClaudeAuthRequestSchema,
   ProviderUsageListRequestMessageSchema,
   ResumeAgentRequestMessageSchema,
   ImportAgentRequestMessageSchema,
@@ -3658,6 +3666,8 @@ export const ServerInfoStatusPayloadSchema = z
         commitBaseClassification: z.boolean().optional(),
         // COMPAT(providerRemoval): added in v0.1.105, drop the gate when floor >= v0.1.105.
         providerRemoval: z.boolean().optional(),
+        // COMPAT(claudeAuth): added in v0.10.0, remove gate after 2027-03-28.
+        claudeAuth: z.boolean().optional(),
         // COMPAT(importSessionWorkspaceTarget): added in v0.1.110, remove gate after 2027-01-16.
         importSessionWorkspaceTarget: z.boolean().optional(),
         // COMPAT(importSessionSearch): added in v0.8.0, remove gate after 2027-03-02.
@@ -6187,6 +6197,18 @@ export const ProviderUsageWindowSchema = z.object({
   tone: ProviderUsageToneSchema.optional(),
 });
 
+export const ClaudeAuthResponseSchema = z.object({
+  type: z.literal("provider.claude.auth.response"),
+  payload: z.discriminatedUnion("status", [
+    z.object({ status: z.literal("disconnected"), requestId: z.string() }),
+    z.object({ status: z.literal("starting"), requestId: z.string() }),
+    z.object({ status: z.literal("checking"), requestId: z.string() }),
+    z.object({ status: z.literal("connected"), requestId: z.string() }),
+    z.object({ status: z.literal("pending"), url: z.string().url(), requestId: z.string() }),
+    z.object({ status: z.literal("error"), message: z.string(), requestId: z.string() }),
+  ]),
+});
+
 export const ProviderUsageBalanceSchema = z.object({
   id: z.string(),
   label: z.string(),
@@ -6912,6 +6934,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProvidersSnapshotUpdateMessageSchema,
   RefreshProvidersSnapshotResponseMessageSchema,
   ProviderDiagnosticResponseMessageSchema,
+  ClaudeAuthResponseSchema,
   ProviderUsageListResponseMessageSchema,
   ListCommandsResponseSchema,
   ListTerminalsResponseSchema,
@@ -7090,6 +7113,7 @@ export type RefreshProvidersSnapshotResponseMessage = z.infer<
 export type ProviderDiagnosticResponseMessage = z.infer<
   typeof ProviderDiagnosticResponseMessageSchema
 >;
+export type ClaudeAuthResponse = z.infer<typeof ClaudeAuthResponseSchema>;
 export type ProviderUsageTone = z.infer<typeof ProviderUsageToneSchema>;
 export type ProviderUsageStatus = z.infer<typeof ProviderUsageStatusSchema>;
 export type ProviderUsage = z.infer<typeof ProviderUsageSchema>;
