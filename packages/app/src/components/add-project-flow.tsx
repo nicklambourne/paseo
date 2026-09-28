@@ -70,6 +70,7 @@ import {
   buildProjectPickerOptions,
   type ProjectPickerOption,
 } from "@/components/project-picker-options";
+import { GithubDeviceAuthPrompt } from "@/components/github-device-auth-prompt";
 import { Shortcut } from "@/components/ui/shortcut";
 import { useKeyboardShortcutsAvailable } from "@/keyboard/availability";
 import { getIsElectronRuntime } from "@/constants/layout";
@@ -326,6 +327,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const githubCloneByHost = useHostFeatureMap(hostIds, "projectGithubClone");
   // COMPAT(workspaceGithubRepositorySearch): added in v0.1.108, remove gate after 2027-01-15.
   const githubSearchByHost = useHostFeatureMap(hostIds, "workspaceGithubRepositorySearch");
+  const githubDeviceAuthByHost = useHostFeatureMap(hostIds, "githubDeviceAuth");
   // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
   const createDirectoryByHost = useHostFeatureMap(hostIds, "projectCreateDirectory");
   const localServerId = useLocalDaemonServerId();
@@ -390,6 +392,9 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const pageInputValueRef = useRef(page.kind === "method" ? "" : pageInput(page));
   pageInputValueRef.current = page.kind === "method" ? "" : pageInput(page);
   const [debouncedQuery, setDebouncedQuery] = useState(query);
+  const [githubAuthEpoch, setGithubAuthEpoch] = useState(0);
+  const canConnectGithub = hostId ? githubDeviceAuthByHost.get(hostId) === true : false;
+  const onGithubAuthenticated = useCallback(() => setGithubAuthEpoch((epoch) => epoch + 1), []);
 
   useEffect(() => {
     setState((current) =>
@@ -435,7 +440,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
     staleTimeMs: 15_000,
   });
   const githubQuery = useFetchQuery({
-    queryKey: ["add-project-flow-github", hostId, debouncedQuery],
+    queryKey: ["add-project-flow-github", hostId, debouncedQuery, githubAuthEpoch],
     queryFn: async () => {
       if (!client) throw new Error("Host is unavailable");
       const payload = await client.searchGithubRepositories({ query: debouncedQuery, limit: 30 });
@@ -834,6 +839,10 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
     (page.kind === "github-search" &&
       host?.canSearchGithubRepositories === true &&
       (query !== debouncedQuery || githubQuery.isFetching));
+  const showGithubAuth =
+    page.kind === "github-search" &&
+    canConnectGithub &&
+    currentGithubSearch?.status === "unauthenticated";
   const queryError = queryErrorText({
     searchesDirectories,
     directoryFailed: directoryQuery.isError,
@@ -926,10 +935,17 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
                 {page.error}
               </Text>
             ) : null}
-            {!isSubmitting && queryError ? (
+            {!isSubmitting && queryError && !showGithubAuth ? (
               <Text style={styles.errorText} testID="add-project-flow-query-error">
                 {queryError}
               </Text>
+            ) : null}
+            {!isSubmitting && showGithubAuth && hostId ? (
+              <GithubDeviceAuthPrompt
+                serverId={hostId}
+                onAuthenticated={onGithubAuthenticated}
+                style={styles.githubAuthPlacement}
+              />
             ) : null}
             {!isSubmitting && loading ? (
               <Text style={styles.stateText} testID="add-project-flow-loading">
@@ -1069,6 +1085,10 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[4],
+  },
+  githubAuthPlacement: {
+    marginHorizontal: theme.spacing[4],
+    marginVertical: theme.spacing[2],
   },
   errorText: {
     color: theme.colors.destructive,

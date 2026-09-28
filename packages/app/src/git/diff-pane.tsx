@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, type ReactElement, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { GithubDeviceAuthPrompt } from "@/components/github-device-auth-prompt";
 import { TreeRail } from "@/components/tree-rail";
 import { TreeRailToggle } from "@/components/tree-rail-toggle";
 import { DiffStat } from "@/components/diff-stat";
@@ -1211,6 +1212,20 @@ function computeForgeSetupAction(input: {
   }
 }
 
+function canUseGithubDeviceAuth(input: {
+  forge: Forge;
+  action: ForgeSetupAction;
+  supported: boolean;
+  host: string | null;
+}): boolean {
+  return (
+    input.forge === "github" &&
+    input.action === "sign_in" &&
+    input.supported &&
+    (input.host === "github.com" || input.host === "ssh.github.com")
+  );
+}
+
 function parseForgeHost(url: string | null | undefined): string | null {
   return url ? (parseGitRemoteLocation(url)?.host ?? null) : null;
 }
@@ -1435,6 +1450,34 @@ function useDiffTabNavigation({
   };
 }
 
+function ForgeAuthCallout({
+  showGithubDeviceAuth,
+  serverId,
+  onGithubAuthenticated,
+  message,
+}: {
+  showGithubDeviceAuth: boolean;
+  serverId: string;
+  onGithubAuthenticated: () => void;
+  message: string | null;
+}) {
+  if (showGithubDeviceAuth) {
+    return (
+      <GithubDeviceAuthPrompt
+        serverId={serverId}
+        onAuthenticated={onGithubAuthenticated}
+        style={styles.githubDeviceAuthCallout}
+      />
+    );
+  }
+  if (!message) return null;
+  return (
+    <View style={styles.forgeSetupCallout} testID="forge-setup-callout">
+      <Text style={styles.forgeSetupCalloutText}>{message}</Text>
+    </View>
+  );
+}
+
 export function ChangesSurface({
   serverId,
   workspaceId,
@@ -1568,6 +1611,7 @@ export function ChangesSurface({
     forge,
     authState,
     payloadError: prPayloadError,
+    refetch: refreshPrStatus,
   } = useCheckoutPrStatusQuery({
     serverId,
     cwd,
@@ -1581,15 +1625,28 @@ export function ChangesSurface({
     forgeProvidersSupported,
     authState,
   });
+  const githubDeviceAuthSupported = useSessionStore(
+    (s) => s.sessions[serverId]?.serverInfo?.features?.githubDeviceAuth === true,
+  );
+  const forgeHost = parseForgeHost(status?.remoteUrl);
+  const showGithubDeviceAuth = canUseGithubDeviceAuth({
+    forge,
+    action: forgeSetupAction,
+    supported: githubDeviceAuthSupported,
+    host: forgeHost,
+  });
+  const onGithubAuthenticated = useCallback(() => {
+    void refreshPrStatus();
+  }, [refreshPrStatus]);
   const forgeSetupMessage = useMemo(
     () =>
       buildForgeSetupMessage({
         action: forgeSetupAction,
         forge,
-        host: parseForgeHost(status?.remoteUrl),
+        host: forgeHost,
         t,
       }),
-    [forgeSetupAction, forge, status?.remoteUrl, t],
+    [forgeSetupAction, forge, forgeHost, t],
   );
   const handleToggleDesktopTree = useCallback(() => {
     updateState({ ...instanceState, treeVisible: !desktopTreeVisible });
@@ -1919,11 +1976,12 @@ export function ChangesSurface({
         />
       ) : null}
 
-      {forgeSetupMessage ? (
-        <View style={styles.forgeSetupCallout} testID="forge-setup-callout">
-          <Text style={styles.forgeSetupCalloutText}>{forgeSetupMessage}</Text>
-        </View>
-      ) : null}
+      <ForgeAuthCallout
+        showGithubDeviceAuth={showGithubDeviceAuth}
+        serverId={serverId}
+        onGithubAuthenticated={onGithubAuthenticated}
+        message={forgeSetupMessage}
+      />
 
       {prErrorMessage ? <Text style={styles.actionErrorText}>{prErrorMessage}</Text> : null}
 
@@ -1981,6 +2039,10 @@ const styles = StyleSheet.create((theme) => ({
     paddingBottom: theme.spacing[1],
     fontSize: theme.fontSize.sm,
     color: theme.colors.destructive,
+  },
+  githubDeviceAuthCallout: {
+    marginHorizontal: theme.spacing[3],
+    marginBottom: theme.spacing[2],
   },
   forgeSetupCallout: {
     marginHorizontal: theme.spacing[3],

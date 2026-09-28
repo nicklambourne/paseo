@@ -6,6 +6,33 @@ import {
 } from "./messages.js";
 
 describe("project command-center protocol", () => {
+  it("validates GitHub device authorization without accepting an arbitrary destination URL", () => {
+    expect(
+      SessionInboundMessageSchema.parse({
+        type: "github.device_auth.request",
+        action: "start",
+        requestId: "req-auth",
+      }),
+    ).toMatchObject({ action: "start", requestId: "req-auth" });
+
+    const pending = {
+      type: "github.device_auth.response",
+      payload: {
+        status: "pending",
+        requestId: "req-auth",
+        userCode: "ABCD-1234",
+        verificationUrl: "https://github.com/login/device",
+      },
+    };
+    expect(SessionOutboundMessageSchema.parse(pending)).toMatchObject(pending);
+    expect(
+      SessionOutboundMessageSchema.safeParse({
+        ...pending,
+        payload: { ...pending.payload, verificationUrl: "https://attacker.example/device" },
+      }).success,
+    ).toBe(false);
+  });
+
   it("parses the dotted GitHub repository search request and normalized success response", () => {
     expect(
       SessionInboundMessageSchema.parse({

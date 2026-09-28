@@ -120,10 +120,23 @@ if (origin === fixtureRemote) {
   process.exit(1);
 }
 
-const realGhPath = ${JSON.stringify(realGhPath)};
-if (!realGhPath) process.exit(127);
-const result = spawnSync(realGhPath, args, { stdio: "inherit" });
-process.exit(result.status ?? 1);
+if (process.env.PASEO_E2E_GH_UNAUTHENTICATED === "1" &&
+    ["repo list", "search repos"].includes(args.slice(0, 2).join(" "))) {
+  process.stderr.write("To authenticate, run: gh auth login\\n");
+  process.exit(1);
+}
+if (process.env.PASEO_E2E_GH_UNAUTHENTICATED === "1" &&
+    args.slice(0, 2).join(" ") === "auth login") {
+  process.stdout.write("! First copy your one-time code: ABCD-1234\\n");
+  process.stdout.write("Press Enter to open https://github.com/login/device in your browser...");
+  process.stdin.resume();
+  setInterval(() => {}, 1000);
+} else {
+  const realGhPath = ${JSON.stringify(realGhPath)};
+  if (!realGhPath) process.exit(127);
+  const result = spawnSync(realGhPath, args, { stdio: "inherit" });
+  process.exit(result.status ?? 1);
+}
 `;
   await writeFile(fakeGhPath, fakeGhSource);
   await chmod(fakeGhPath, 0o755);

@@ -2887,6 +2887,8 @@ export class Session {
         return this.handleProjectCreateDirectoryRequest(msg);
       case "workspace.github.search_repositories.request":
         return this.handleWorkspaceGithubSearchRepositoriesRequest(msg);
+      case "github.device_auth.request":
+        return this.handleGithubDeviceAuthRequest(msg);
       case "project.github.clone.request":
         return this.handleProjectGithubCloneRequest(msg);
       case "archive_workspace_request":
@@ -6909,6 +6911,42 @@ export class Session {
           project: null,
           error: requestError.message,
           errorCode: requestError.code,
+        },
+      });
+    }
+  }
+
+  private async handleGithubDeviceAuthRequest(
+    request: Extract<SessionInboundMessage, { type: "github.device_auth.request" }>,
+  ): Promise<void> {
+    const github = this.github as Partial<GitHubService>;
+    try {
+      let state;
+      if (request.action === "start") {
+        state = await github.startDeviceAuth?.();
+      } else if (request.action === "cancel") {
+        state = github.cancelDeviceAuth?.();
+      } else {
+        state = github.getDeviceAuthStatus?.();
+      }
+      this.emit({
+        type: "github.device_auth.response",
+        payload: state
+          ? { requestId: request.requestId, ...state }
+          : {
+              requestId: request.requestId,
+              status: "error",
+              message: "GitHub device sign-in is unavailable on this host.",
+            },
+      });
+    } catch (error) {
+      this.sessionLogger.warn({ err: error }, "GitHub device sign-in failed");
+      this.emit({
+        type: "github.device_auth.response",
+        payload: {
+          requestId: request.requestId,
+          status: "error",
+          message: "GitHub device sign-in failed. Try again.",
         },
       });
     }

@@ -3506,6 +3506,49 @@ test("searches GitHub repositories through the dotted RPC", async () => {
   });
 });
 
+test("starts GitHub device authorization through the correlated RPC", async () => {
+  const logger = createMockLogger();
+  const mock = createMockTransport();
+  const client = new DaemonClient({
+    url: "ws://test",
+    clientId: "clsk_unit_test",
+    logger,
+    reconnect: { enabled: false },
+    transportFactory: () => mock.transport,
+  });
+  clients.push(client);
+
+  const connectPromise = client.connect();
+  mock.triggerOpen();
+  await connectPromise;
+
+  const startPromise = client.githubDeviceAuth("start", "req-auth");
+  expect(parseSentFrame(mock.sent[0])).toEqual({
+    type: "github.device_auth.request",
+    action: "start",
+    requestId: "req-auth",
+  });
+
+  mock.triggerMessage(
+    wrapSessionMessage({
+      type: "github.device_auth.response",
+      payload: {
+        status: "pending",
+        requestId: "req-auth",
+        userCode: "ABCD-1234",
+        verificationUrl: "https://github.com/login/device",
+      },
+    }),
+  );
+
+  await expect(startPromise).resolves.toEqual({
+    status: "pending",
+    requestId: "req-auth",
+    userCode: "ABCD-1234",
+    verificationUrl: "https://github.com/login/device",
+  });
+});
+
 test("creates and registers a project directory through the dotted RPC", async () => {
   const logger = createMockLogger();
   const mock = createMockTransport();

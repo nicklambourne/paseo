@@ -841,6 +841,64 @@ describe("session authorization permissions", () => {
 });
 
 describe("project command-center RPCs", () => {
+  test("starts GitHub device authorization without sending credentials to the client", async () => {
+    const messages: SessionOutboundMessage[] = [];
+    const startDeviceAuth = vi.fn().mockResolvedValue({
+      status: "pending",
+      userCode: "ABCD-1234",
+      verificationUrl: "https://github.com/login/device",
+    });
+    const session = createSessionForTest({ messages, github: { startDeviceAuth } });
+
+    await session.handleMessage({
+      type: "github.device_auth.request",
+      action: "start",
+      requestId: "req-github-auth",
+    });
+
+    expect(startDeviceAuth).toHaveBeenCalledOnce();
+    expect(messages).toEqual([
+      {
+        type: "github.device_auth.response",
+        payload: {
+          status: "pending",
+          requestId: "req-github-auth",
+          userCode: "ABCD-1234",
+          verificationUrl: "https://github.com/login/device",
+        },
+      },
+    ]);
+  });
+
+  test("denies GitHub sign-in to clients without daemon-management permission", async () => {
+    const messages: SessionOutboundMessage[] = [];
+    const startDeviceAuth = vi.fn();
+    const session = createSessionForTest({
+      messages,
+      permissions: ["workspace.manage"],
+      github: { startDeviceAuth },
+    });
+
+    await session.handleMessage({
+      type: "github.device_auth.request",
+      action: "start",
+      requestId: "req-denied",
+    });
+
+    expect(startDeviceAuth).not.toHaveBeenCalled();
+    expect(messages).toEqual([
+      {
+        type: "rpc_error",
+        payload: {
+          requestId: "req-denied",
+          requestType: "github.device_auth.request",
+          error: "Session is not authorized for github.device_auth.request",
+          code: "access_denied",
+        },
+      },
+    ]);
+  });
+
   test("returns normalized repositories from the host GitHub service", async () => {
     const messages: SessionOutboundMessage[] = [];
     const searchRepositories = vi.fn().mockResolvedValue([

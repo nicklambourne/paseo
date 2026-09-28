@@ -54,6 +54,7 @@ export function useCheckoutPrStatusQuery({
     // the remote URL (e.g. web-URL grammar) don't act on the github default.
     resolvedForge: query.data === undefined ? null : normalizeForge(query.data.forge),
     payloadError: query.data?.error ?? null,
+    refetch: query.refetch,
     isLoading: query.isLoading,
     isFetching: query.isFetching,
     isError: query.isError,

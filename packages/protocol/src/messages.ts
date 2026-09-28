@@ -2589,6 +2589,12 @@ export const WorkspaceGithubSearchRepositoriesRequestSchema = z.object({
   requestId: z.string(),
 });
 
+export const GithubDeviceAuthRequestSchema = z.object({
+  type: z.literal("github.device_auth.request"),
+  action: z.enum(["start", "status", "cancel"]),
+  requestId: z.string(),
+});
+
 export const ProjectGithubCloneProtocolSchema = z.enum(["https", "ssh"]);
 
 export const ProjectGithubCloneRequestSchema = z.object({
@@ -3311,6 +3317,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProjectAddRequestSchema,
   ProjectCreateDirectoryRequestSchema,
   WorkspaceGithubSearchRepositoriesRequestSchema,
+  GithubDeviceAuthRequestSchema,
   ProjectGithubCloneRequestSchema,
   ArchiveWorkspaceRequestSchema,
   WorkspaceCreateRequestSchema,
@@ -3663,6 +3670,7 @@ export const ServerInfoStatusPayloadSchema = z
         projectGithubClone: z.boolean().optional(),
         // COMPAT(workspaceGithubRepositorySearch): added in v0.1.108, remove gate after 2027-01-15.
         workspaceGithubRepositorySearch: z.boolean().optional(),
+        githubDeviceAuth: z.boolean().optional(),
         // COMPAT(projectCreateDirectory): added in v0.1.108, remove gate after 2027-01-15.
         projectCreateDirectory: z.boolean().optional(),
         // COMPAT(projectList): added in v0.2.4, drop the gate when floor >= v0.2.4.
@@ -4443,6 +4451,22 @@ export const ProjectCreateDirectoryResponseSchema = z.object({
     // responses after a newer daemon learns another failure reason.
     errorCode: z.string().nullable(),
   }),
+});
+
+export const GithubDeviceAuthResponseSchema = z.object({
+  type: z.literal("github.device_auth.response"),
+  payload: z.discriminatedUnion("status", [
+    z.object({ status: z.literal("idle"), requestId: z.string() }),
+    z.object({ status: z.literal("starting"), requestId: z.string() }),
+    z.object({ status: z.literal("authenticated"), requestId: z.string() }),
+    z.object({
+      status: z.literal("pending"),
+      requestId: z.string(),
+      userCode: z.string().regex(/^[A-Z0-9]{4}-[A-Z0-9]{4}$/),
+      verificationUrl: z.literal("https://github.com/login/device"),
+    }),
+    z.object({ status: z.literal("error"), requestId: z.string(), message: z.string() }),
+  ]),
 });
 
 export const WorkspaceGithubSearchRepositoriesResponseSchema = z.object({
@@ -6840,6 +6864,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProjectCreateDirectoryResponseSchema,
   OpenProjectResponseMessageSchema,
   WorkspaceGithubSearchRepositoriesResponseSchema,
+  GithubDeviceAuthResponseSchema,
   ProjectGithubCloneResponseSchema,
   StartWorkspaceScriptResponseMessageSchema,
   WorkspaceScriptListResponseMessageSchema,
@@ -7048,6 +7073,7 @@ export type OpenProjectResponseMessage = z.infer<typeof OpenProjectResponseMessa
 export type WorkspaceGithubSearchRepositoriesResponse = z.infer<
   typeof WorkspaceGithubSearchRepositoriesResponseSchema
 >;
+export type GithubDeviceAuthResponse = z.infer<typeof GithubDeviceAuthResponseSchema>;
 export type GithubRepository = z.infer<typeof GithubRepositorySchema>;
 export type ProjectGithubCloneResponse = z.infer<typeof ProjectGithubCloneResponseSchema>;
 export type StartWorkspaceScriptResponseMessage = z.infer<
@@ -7369,6 +7395,7 @@ export type ProjectCreateDirectoryErrorCode = z.infer<typeof ProjectCreateDirect
 export type WorkspaceGithubSearchRepositoriesRequest = z.infer<
   typeof WorkspaceGithubSearchRepositoriesRequestSchema
 >;
+export type GithubDeviceAuthRequest = z.infer<typeof GithubDeviceAuthRequestSchema>;
 export type ProjectGithubCloneRequest = z.infer<typeof ProjectGithubCloneRequestSchema>;
 export type ProjectGithubCloneProtocol = z.infer<typeof ProjectGithubCloneProtocolSchema>;
 export type ArchiveWorkspaceRequest = z.infer<typeof ArchiveWorkspaceRequestSchema>;
