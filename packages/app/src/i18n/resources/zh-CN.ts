@@ -2525,6 +2525,7 @@ export const zhCN: TranslationResources = {
     },
     providers: {
       claudeAuth: en.settings.providers.claudeAuth,
+      codexAuth: en.settings.providers.codexAuth,
       title: "Providers",
       addProvider: "添加 Provider",
       providerDetails: "{{name}} Provider 详情",

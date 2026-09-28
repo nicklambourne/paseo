@@ -1,5 +1,6 @@
 import type pino from "pino";
 import { claudeAuth } from "../../../services/claude-auth.js";
+import { codexAuth } from "../../../services/codex-auth.js";
 import { createHash } from "node:crypto";
 import { getErrorMessage } from "@getpaseo/protocol/error-utils";
 import { compactProviderSnapshot } from "@getpaseo/protocol/provider-snapshot-codec";
@@ -486,6 +487,16 @@ export class ProviderCatalogSession {
         },
       });
     }
+  }
+
+  async handleCodexAuthRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.codex.auth.request" }>,
+  ): Promise<void> {
+    const state = await codexAuth.handle(msg.action);
+    this.host.emit({
+      type: "provider.codex.auth.response",
+      payload: { ...state, requestId: msg.requestId },
+    });
   }
 
   async handleClaudeAuthRequest(

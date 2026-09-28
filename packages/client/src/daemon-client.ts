@@ -5229,6 +5229,13 @@ export class DaemonClient {
     });
   }
 
+  async codexAuth(action: "start" | "status" | "cancel") {
+    return this.sendNamespacedCorrelatedSessionRequest<"provider.codex.auth.response">({
+      message: { type: "provider.codex.auth.request", action },
+      timeout: 60_000,
+    });
+  }
+
   async claudeAuth(action: "start" | "status" | "submit" | "cancel", code?: string) {
     return this.sendNamespacedCorrelatedSessionRequest<"provider.claude.auth.response">({
       message: { type: "provider.claude.auth.request", action, ...(code ? { code } : {}) },

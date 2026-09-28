@@ -2623,6 +2623,7 @@ export const fr: TranslationResources = {
     },
     providers: {
       claudeAuth: en.settings.providers.claudeAuth,
+      codexAuth: en.settings.providers.codexAuth,
       title: "Fournisseurs",
       addProvider: "Ajouter un fournisseur",
       providerDetails: "Détails du fournisseur{{name}}",

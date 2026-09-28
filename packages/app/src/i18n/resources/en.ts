@@ -2729,6 +2729,21 @@ export const en = {
         custom: "Custom models",
         updated: "Updated {{time}}",
       },
+      codexAuth: {
+        title: "Codex account",
+        updateHost: "Update this host to connect Codex in Paseo",
+        description: "Connect this host to your ChatGPT account to use Codex models",
+        connect: "Connect Codex",
+        starting: "Starting...",
+        connected: "Codex is connected on this host",
+        instruction:
+          "Open the link, sign in to ChatGPT, then enter this one-time code on that page. Keep this page open while Codex finishes signing in.",
+        open: "Open Codex sign-in",
+        cancel: "Cancel",
+        checkFailed: "Unable to check Codex sign-in. Try again.",
+        actionFailed: "Unable to complete Codex sign-in. Try again.",
+        openFailed: "Unable to open the link. Copy it above into a browser.",
+      },
       claudeAuth: {
         title: "Claude Code account",
         updateHost: "Update this host to connect Claude Code in Paseo",

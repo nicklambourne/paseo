@@ -2584,6 +2584,7 @@ export const ja: TranslationResources = {
     },
     providers: {
       claudeAuth: en.settings.providers.claudeAuth,
+      codexAuth: en.settings.providers.codexAuth,
       title: "プロバイダー",
       addProvider: "プロバイダーを追加",
       providerDetails: "{{name}}プロバイダーの詳細",

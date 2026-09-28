@@ -2556,6 +2556,7 @@ export const ar: TranslationResources = {
     },
     providers: {
       claudeAuth: en.settings.providers.claudeAuth,
+      codexAuth: en.settings.providers.codexAuth,
       title: "مقدمي الخدمات",
       addProvider: "إضافة مزود",
       providerDetails: "تفاصيل مزود{{name}}",
